@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,30 +9,71 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            margin: 0;
+            padding: 0;
         }
-        canvas {
-            display: block;
-            margin: 0 auto;
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #gameCanvas {
             border: 1px solid black;
+            max-width: 100%;
         }
+
+        #score-container,
+        #controls-container {
+            margin: 10px 0;
+        }
+
         #score {
             font-size: 24px;
-            margin: 10px;
+            margin-bottom: 20px;
         }
+
         #game-over {
             font-size: 32px;
             color: red;
             display: none;
         }
+
+        .control-button {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100px;
+        }
+
+        #controls-container {
+            display: flex;
+            justify-content: center;
+        }
     </style>
 </head>
+
 <body>
     <h1>Risk Tolerance Game</h1>
-    <p>Play the game below and then submit your score in the form.</p>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="score">Score: 0</div>
+    <div id="container">
+        <div id="score-container">
+            <div id="score">Score: 0</div>
+        </div>
+        <canvas id="gameCanvas" width="200" height="600"></canvas>
+        <div id="controls-container">
+            <button id="start-button" class="control-button">Start</button>
+            <button id="stop-button" class="control-button">Stop</button>
+            <button id="reset-button" class="control-button">Reset</button>
+            <button id="submit-button" class="control-button">Submit</button>
+        </div>
+    </div>
     <div id="game-over">Game Over! <span id="final-score"></span></div>
 
     <script src="game.js"></script>
 </body>
+
 </html>

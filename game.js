@@ -3,9 +3,9 @@ const ctx = canvas.getContext('2d');
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
-const LIMIT_LEFT = 300;
-const LIMIT_RIGHT = 500;
-const START_X = (LIMIT_LEFT + LIMIT_RIGHT) / 2;
+const LIMIT_LEFT = 0;
+const LIMIT_RIGHT = WIDTH;
+const START_X = WIDTH / 2;
 const START_Y = 50;
 const STEP_SIZE = 5;
 const INITIAL_SIDEWAYS_INCREMENT = 1;
@@ -37,18 +37,23 @@ function getQueryParams() {
     };
 }
 
-// Event listeners for controls
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'r') {  // Reset game
-        path = [{ x: START_X, y: START_Y }];
-        score = 0;
-        running = false;
-        document.getElementById('game-over').style.display = 'none';
-    } else if (event.key === 's') {  // Start game
-        running = true;
-    } else if (event.key === 'e') {  // End game
-        running = false;
-    }
+// Button event listeners
+document.getElementById('start-button').addEventListener('click', () => {
+    running = true;
+});
+document.getElementById('stop-button').addEventListener('click', () => {
+    running = false;
+});
+document.getElementById('reset-button').addEventListener('click', () => {
+    path = [{ x: START_X, y: START_Y }];
+    score = 0;
+    running = false;
+    document.getElementById('game-over').style.display = 'none';
+    updateScore();
+    drawInitialCanvas();
+});
+document.getElementById('submit-button').addEventListener('click', () => {
+    submitScore(score);
 });
 
 function drawLimits() {
@@ -83,7 +88,7 @@ function drawJackpotZone() {
     ctx.fillText('Jackpot!', WIDTH / 2 - 50, HEIGHT - JACKPOT_ZONE_HEIGHT / 2 + 10);
 }
 
-function displayScore() {
+function updateScore() {
     document.getElementById('score').textContent = `Score: ${score}`;
 }
 
@@ -100,6 +105,7 @@ function randomWalk() {
     const newX = lastPoint.x + sideVariation;
     path.push({ x: newX, y: newY });
     score += 1;
+    updateScore();
     if (newY >= HEIGHT - JACKPOT_ZONE_HEIGHT) {
         running = false;
         submitScore(score);
@@ -112,13 +118,17 @@ function submitScore(score) {
     window.location.href = formUrl;
 }
 
-function gameLoop() {
+function drawInitialCanvas() {
     ctx.fillStyle = WHITE;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     drawLimits();
-    drawPath();
     drawJackpotZone();
-    displayScore();
+    drawPath();
+    updateScore();
+}
+
+function gameLoop() {
+    drawInitialCanvas();
 
     if (running) {
         randomWalk();
@@ -133,4 +143,5 @@ function gameLoop() {
 }
 
 // Start the game loop
+drawInitialCanvas();  // Draw the initial state
 requestAnimationFrame(gameLoop);

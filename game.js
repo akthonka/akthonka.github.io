@@ -3,18 +3,22 @@ const ctx = canvas.getContext('2d');
 
 const WIDTH = canvas.width;
 const HEIGHT = canvas.height;
-const LIMIT_LEFT = 0;
-const LIMIT_RIGHT = WIDTH;
+const LIMIT_LEFT = 50;
+const LIMIT_RIGHT = WIDTH - 50;
 const START_X = WIDTH / 2;
 const START_Y = 50;
-const STEP_SIZE = 5;
+const STEP_SIZE = 2; // Adjust step size to make the path move slower
 const INITIAL_SIDEWAYS_INCREMENT = 1;
 const JACKPOT_ZONE_HEIGHT = 50;
 const FPS = 30;
+const FREEZE_FRAME_DURATION = 1000; // 1 second in milliseconds
 
 let path = [{ x: START_X, y: START_Y }];
 let score = 0;
+let totalScore = 0;
+let lives = 5;
 let running = false;
+let gameOver = false;
 let sidewaysIncrement = INITIAL_SIDEWAYS_INCREMENT;
 
 // Colors
@@ -24,11 +28,7 @@ const RED = '#FF0000';
 const GREEN = '#00FF00';
 const BRIGHT_GREEN = '#00FF00';
 
-// Google Form URL and entry ID
-const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/your_google_form_id/viewform";
-const SCORE_ENTRY_ID = "entry.your_entry_id";
-
-// Extract parameters from URL
+// Extract parameters from URL (for future use)
 function getQueryParams() {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -39,24 +39,23 @@ function getQueryParams() {
 
 // Button event listeners
 document.getElementById('start-button').addEventListener('click', () => {
-    running = true;
+    if (!gameOver) {
+        running = true;
+    }
 });
 document.getElementById('stop-button').addEventListener('click', () => {
-    running = false;
+    if (running) {
+        endLife();
+    }
 });
 document.getElementById('reset-button').addEventListener('click', () => {
-    path = [{ x: START_X, y: START_Y }];
-    score = 0;
-    running = false;
-    document.getElementById('game-over').style.display = 'none';
-    updateScore();
-    drawInitialCanvas();
-});
-document.getElementById('submit-button').addEventListener('click', () => {
-    submitScore(score);
+    resetGame();
 });
 
 function drawLimits() {
+    ctx.fillStyle = RED;
+    ctx.fillRect(0, 0, LIMIT_LEFT, HEIGHT);
+    ctx.fillRect(LIMIT_RIGHT, 0, WIDTH - LIMIT_RIGHT, HEIGHT);
     ctx.strokeStyle = RED;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -65,6 +64,13 @@ function drawLimits() {
     ctx.moveTo(LIMIT_RIGHT, 0);
     ctx.lineTo(LIMIT_RIGHT, HEIGHT);
     ctx.stroke();
+}
+
+function drawIndicators() {
+    ctx.fillStyle = WHITE;
+    ctx.font = '20px Arial';
+    ctx.fillText('-100', LIMIT_LEFT - 45, HEIGHT / 2);
+    ctx.fillText('-100', LIMIT_RIGHT + 8, HEIGHT / 2);
 }
 
 function drawPath() {
@@ -85,11 +91,13 @@ function drawJackpotZone() {
     ctx.fillRect(0, HEIGHT - JACKPOT_ZONE_HEIGHT, WIDTH, JACKPOT_ZONE_HEIGHT);
     ctx.fillStyle = BLACK;
     ctx.font = '24px Arial';
-    ctx.fillText('Jackpot!', WIDTH / 2 - 50, HEIGHT - JACKPOT_ZONE_HEIGHT / 2 + 10);
+    ctx.fillText('Jackpot! (+1000)', WIDTH / 2 - 80, HEIGHT - JACKPOT_ZONE_HEIGHT / 2 + 10);
 }
 
 function updateScore() {
     document.getElementById('score').textContent = `Score: ${score}`;
+    document.getElementById('total-score').textContent = `Total Score: ${totalScore}`;
+    document.getElementById('lives').textContent = `Lives: ${lives}`;
 }
 
 function checkLimits() {
@@ -107,21 +115,52 @@ function randomWalk() {
     score += 1;
     updateScore();
     if (newY >= HEIGHT - JACKPOT_ZONE_HEIGHT) {
-        running = false;
-        submitScore(score);
+        totalScore += 1000; // Award 500 points for reaching the jackpot
+        endLife();
     }
 }
 
-function submitScore(score) {
-    const params = getQueryParams();
-    const formUrl = `${GOOGLE_FORM_URL}?${SCORE_ENTRY_ID}=${score}&entry.name=${params.name}&entry.email=${params.email}`;
-    window.location.href = formUrl;
+function endLife() {
+    running = false;
+    totalScore += score; // Add current run score to total score
+    if (!checkLimits()) {
+        totalScore -= 100; // Subtract 100 points if the path touches the limit
+    }
+    score = 0;
+    updateScore();
+
+    // Freeze frame before resetting
+    setTimeout(() => {
+        lives -= 1;
+        if (lives <= 0) {
+            gameOver = true;
+            document.getElementById('start-button').disabled = true;
+            document.getElementById('game-over').style.display = 'block';
+            document.getElementById('final-score').textContent = `Your final total score is ${totalScore}.`;
+        }
+        path = [{ x: START_X, y: START_Y }];
+        drawInitialCanvas();
+    }, FREEZE_FRAME_DURATION);
+}
+
+function resetGame() {
+    path = [{ x: START_X, y: START_Y }];
+    score = 0;
+    totalScore = 0;
+    lives = 5;
+    running = false;
+    gameOver = false;
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('start-button').disabled = false;
+    updateScore();
+    drawInitialCanvas();
 }
 
 function drawInitialCanvas() {
     ctx.fillStyle = WHITE;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
     drawLimits();
+    drawIndicators();
     drawJackpotZone();
     drawPath();
     updateScore();
@@ -133,9 +172,7 @@ function gameLoop() {
     if (running) {
         randomWalk();
         if (!checkLimits()) {
-            running = false;
-            document.getElementById('game-over').style.display = 'block';
-            document.getElementById('final-score').textContent = `Your final score is ${score}.`;
+            endLife();
         }
     }
 
